@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, mean_squared_error, classification_report
 import xgboost as xgb
+import io
 
 # Set page configuration
 st.set_page_config(page_title="Advanced EDA App with Model Selection", layout="wide")
@@ -44,8 +45,10 @@ if uploaded_file is not None:
 
     # Dataset Info
     if st.checkbox("Show Dataset Info"):
-        buffer = df.info(buf=None)
-        st.text(buffer)
+        buffer = io.StringIO()
+        df.info(buf=buffer)
+        s = buffer.getvalue()
+        st.text(s)
 
     # Dataset Shape
     if st.checkbox("Show Dataset Shape"):
@@ -183,42 +186,44 @@ if uploaded_file is not None:
         proceed = st.button(f"Proceed with {model_choice}")
 
         if proceed:
-            # Train the model based on the selected task and model
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+            # Spinner for long process
+            with st.spinner(f'Training {model_choice} model...'):
+                # Train the model based on the selected task and model
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-            if task_type == "Classification":
-                if model_choice == "Random Forest":
-                    model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth)
-                elif model_choice == "Logistic Regression":
-                    model = LogisticRegression(max_iter=500)
-                elif model_choice == "Decision Tree":
-                    model = DecisionTreeClassifier(max_depth=max_depth)
-                elif model_choice == "XGBoost":
-                    model = xgb.XGBClassifier(n_estimators=n_estimators, max_depth=max_depth)
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-                accuracy = accuracy_score(y_test, y_pred)
-                st.write(f"### Model Accuracy: {accuracy:.2f}")
-                st.write("### Classification Report")
-                st.text(classification_report(y_test, y_pred))
+                if task_type == "Classification":
+                    if model_choice == "Random Forest":
+                        model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth)
+                    elif model_choice == "Logistic Regression":
+                        model = LogisticRegression(max_iter=500)
+                    elif model_choice == "Decision Tree":
+                        model = DecisionTreeClassifier(max_depth=max_depth)
+                    elif model_choice == "XGBoost":
+                        model = xgb.XGBClassifier(n_estimators=n_estimators, max_depth=max_depth)
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    accuracy = accuracy_score(y_test, y_pred)
+                    st.write(f"### Model Accuracy: {accuracy:.2f}")
+                    st.write("### Classification Report")
+                    st.text(classification_report(y_test, y_pred))
 
-            elif task_type == "Regression":
-                if model_choice == "Random Forest":
-                    model = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth)
-                elif model_choice == "Linear Regression":
-                    model = LinearRegression()
-                elif model_choice == "Decision Tree":
-                    model = DecisionTreeRegressor(max_depth=max_depth)
-                elif model_choice == "XGBoost":
-                    model = xgb.XGBRegressor(n_estimators=n_estimators, max_depth=max_depth)
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-                r2 = r2_score(y_test, y_pred)
-                mae = mean_absolute_error(y_test, y_pred)
-                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-                st.write(f"### Model R-squared: {r2:.2f}")
-                st.write(f"### Mean Absolute Error: {mae:.2f}")
-                st.write(f"### Root Mean Squared Error: {rmse:.2f}")
+                elif task_type == "Regression":
+                    if model_choice == "Random Forest":
+                        model = RandomForestRegressor(n_estimators=n_estimators, max_depth=max_depth)
+                    elif model_choice == "Linear Regression":
+                        model = LinearRegression()
+                    elif model_choice == "Decision Tree":
+                        model = DecisionTreeRegressor(max_depth=max_depth)
+                    elif model_choice == "XGBoost":
+                        model = xgb.XGBRegressor(n_estimators=n_estimators, max_depth=max_depth)
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    r2 = r2_score(y_test, y_pred)
+                    mae = mean_absolute_error(y_test, y_pred)
+                    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                    st.write(f"### Model R-squared: {r2:.2f}")
+                    st.write(f"### Mean Absolute Error: {mae:.2f}")
+                    st.write(f"### Root Mean Squared Error: {rmse:.2f}")
 
 # Footer with progress spinner
 st.write("End of Advanced EDA App 🚀")
