@@ -150,7 +150,7 @@ if uploaded_file is not None:
         corr = df.corr()
         
         # Set up the plot size and style
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(8, 6))  # Adjusted to be smaller
         sns.set(style="white")
         
         # Create a mask to hide the upper triangle (optional)
@@ -158,8 +158,8 @@ if uploaded_file is not None:
         
         # Generate a heatmap with rounded correlation values and better color palette
         sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap='coolwarm', 
-                    cbar_kws={"shrink": .8}, linewidths=0.5, square=True, 
-                    vmin=-1, vmax=1, center=0, annot_kws={"size": 10})
+                    cbar_kws={"shrink": .75}, linewidths=0.4, square=True, 
+                    vmin=-1, vmax=1, center=0, annot_kws={"size": 9})  # Smaller font size
         
         # Show the heatmap in Streamlit
         st.pyplot(plt)
