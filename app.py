@@ -145,23 +145,8 @@ if uploaded_file is not None:
     show_corr_heatmap = st.checkbox("Show Correlation Heatmap")
     if show_corr_heatmap:
         st.write("### Correlation Heatmap:")
-        
-        # Create the correlation matrix
-        corr = df.corr()
-        
-        # Set up the plot size and style
-        plt.figure(figsize=(8, 6))  # Adjusted to be smaller
-        sns.set(style="white")
-        
-        # Create a mask to hide the upper triangle (optional)
-        mask = np.triu(np.ones_like(corr, dtype=bool))
-        
-        # Generate a heatmap with rounded correlation values and better color palette
-        sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap='coolwarm', 
-                    cbar_kws={"shrink": .75}, linewidths=0.4, square=True, 
-                    vmin=-1, vmax=1, center=0, annot_kws={"size": 9})  # Smaller font size
-        
-        # Show the heatmap in Streamlit
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(df.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
         st.pyplot(plt)
 
     # Histograms
