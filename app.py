@@ -42,13 +42,36 @@ if uploaded_file is not None:
     st.write("### Dataset Preview:")
     st.dataframe(df.head())
 
+    # Dataset Info
+    if st.checkbox("Show Dataset Info"):
+        buffer = df.info(buf=None)
+        st.text(buffer)
+
+    # Dataset Shape
+    if st.checkbox("Show Dataset Shape"):
+        st.write(f"Dataset contains {df.shape[0]} rows and {df.shape[1]} columns.")
+
+    # Dataset Summary
+    if st.checkbox("Show Summary (describe)"):
+        st.write("### Summary Statistics:")
+        st.write(df.describe())
+
+    # Step 2: Display Categorical and Numerical Features
+    st.write("### Categorical and Numerical Features")
+    
+    categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+    numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    
+    st.write(f"**Categorical Features:** {categorical_cols}")
+    st.write(f"**Numerical Features:** {numerical_cols}")
+
     # Automatically select the last column as the default target variable
     default_target_col = df.columns[-1]
 
-    # Step 2: Ask if the user wants to perform Classification or Regression
+    # Step 3: Ask if the user wants to perform Classification or Regression
     task_type = st.radio("What type of problem are you working on?", ("Classification", "Regression"))
 
-    # Step 3: Target variable selection based on the task type, with default as the last column
+    # Step 4: Target variable selection based on the task type, with default as the last column
     if task_type == "Classification":
         st.write("You selected **Classification**. Please choose the target (label) column for classification.")
         target_col = st.selectbox("Select the target column", df.columns, index=len(df.columns)-1)
@@ -56,11 +79,11 @@ if uploaded_file is not None:
         st.write("You selected **Regression**. Please choose the target column for regression.")
         target_col = st.selectbox("Select the target column", df.select_dtypes(include=['int64', 'float64']).columns, index=len(df.columns)-1)
 
-    # Step 4: Feature Selection
+    # Step 5: Feature Selection
     st.write("### Select Features for Modeling")
     selected_features = st.multiselect("Select features to include in the model", df.columns.tolist(), default=df.columns[:-1].tolist())
 
-    # Step 5: Preprocessing Options
+    # Step 6: Preprocessing Options
     st.write("### Preprocessing Options")
     
     # Standardization
@@ -80,7 +103,58 @@ if uploaded_file is not None:
         st.write("### Updated Dataset after Encoding Categorical Features")
         st.dataframe(df.head())
 
-    # Step 6: Model Selection
+    # Show missing value information before handling
+    missing_values = df.isnull().sum()
+    missing_columns = missing_values[missing_values > 0]
+    if len(missing_columns) > 0:
+        st.write("### Columns with Missing Values")
+        st.write(missing_columns)
+
+    # Fill missing values
+    fill_missing_values = st.checkbox("Fill Missing Values")
+    if fill_missing_values and len(missing_columns) > 0:
+        fill_method = st.selectbox("Select fill method", ["Mean", "Median", "Custom Value"])
+        if fill_method == "Mean":
+            df.fillna(df.mean(), inplace=True)
+        elif fill_method == "Median":
+            df.fillna(df.median(), inplace=True)
+        else:
+            custom_value = st.number_input("Enter custom value")
+            df.fillna(custom_value, inplace=True)
+        st.write("### Updated Dataset after Filling Missing Values")
+        st.dataframe(df.head())
+    
+    # Drop highly correlated features
+    drop_corr_features = st.checkbox("Drop Highly Correlated Features")
+    if drop_corr_features:
+        corr_matrix = df.corr().abs()
+        upper_triangle = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+        to_drop = [column for column in upper_triangle.columns if any(upper_triangle[column] > 0.95)]
+        df.drop(to_drop, axis=1, inplace=True)
+        st.write(f"Dropped highly correlated features: {to_drop}")
+        st.write("### Updated Dataset after Dropping Highly Correlated Features")
+        st.dataframe(df.head())
+
+    # Step 7: Visualization Options
+    st.write("### Visualization Options")
+    
+    # Correlation Heatmap
+    show_corr_heatmap = st.checkbox("Show Correlation Heatmap")
+    if show_corr_heatmap:
+        st.write("### Correlation Heatmap:")
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(df.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
+        st.pyplot(plt)
+
+    # Histograms
+    show_histograms = st.checkbox("Show Histograms")
+    if show_histograms:
+        st.write("### Histograms")
+        for col in df.select_dtypes(include=['int64', 'float64']).columns:
+            fig = px.histogram(df, x=col, nbins=30, title=f"Histogram for {col}")
+            st.plotly_chart(fig)
+
+    # Step 8: Model Selection
     st.write("### Select the Model")
     
     if task_type == "Classification":
@@ -90,7 +164,7 @@ if uploaded_file is not None:
         model_choice = st.selectbox("Choose a Regression Model", 
                                     ("Random Forest", "Linear Regression", "Decision Tree", "XGBoost"))
 
-    # Step 7: Hyperparameters based on model choice
+    # Step 9: Hyperparameters based on model choice
     st.write("### Model Hyperparameters")
 
     if model_choice in ["Random Forest", "XGBoost", "Decision Tree"]:
@@ -98,7 +172,7 @@ if uploaded_file is not None:
             n_estimators = st.slider("Number of trees (n_estimators)", 50, 500, 100)
         max_depth = st.slider("Max depth of trees (max_depth)", 5, 50, 10)
 
-    # Step 8: Proceed with modeling
+    # Step 10: Proceed with modeling
     if target_col:
         st.write(f"### Selected Target Column: {target_col}")
 
@@ -145,16 +219,6 @@ if uploaded_file is not None:
                 st.write(f"### Model R-squared: {r2:.2f}")
                 st.write(f"### Mean Absolute Error: {mae:.2f}")
                 st.write(f"### Root Mean Squared Error: {rmse:.2f}")
-
-            # Display feature importance for Random Forest, Decision Tree, or XGBoost
-            if model_choice in ["Random Forest", "Decision Tree", "XGBoost"]:
-                feature_importance = pd.DataFrame({
-                    'Feature': selected_features,
-                    'Importance': model.feature_importances_
-                }).sort_values(by='Importance', ascending=False)
-                
-                st.write("### Feature Importance")
-                st.dataframe(feature_importance)
 
 # Footer with progress spinner
 st.write("End of Advanced EDA App 🚀")
