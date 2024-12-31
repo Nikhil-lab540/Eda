@@ -76,11 +76,15 @@ if uploaded_file is not None:
 
     # Step 4: Target variable selection based on the task type, with default as the last column
     if task_type == "Classification":
-        st.write("You selected **Classification**. Please choose the target (label) column for classification.")
-        target_col = st.selectbox("Select the target column", df.columns, index=len(df.columns)-1)
-    elif task_type == "Regression":
-        st.write("You selected **Regression**. Please choose the target column for regression.")
-        target_col = st.selectbox("Select the target column", df.select_dtypes(include=['int64', 'float64']).columns, index=len(df.columns)-1)
+        target_col_options = df.columns
+    else:
+        target_col_options = numerical_cols
+
+    if len(target_col_options) > 0:
+        target_col = st.selectbox("Select the target column", target_col_options, index=min(len(target_col_options)-1, 0))
+    else:
+        st.error("No suitable columns available to select as a target.")
+        target_col = None
 
     # Step 5: Feature Selection
     st.write("### Select Features for Modeling")
