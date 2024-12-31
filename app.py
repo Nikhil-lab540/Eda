@@ -92,12 +92,13 @@ if uploaded_file is not None:
 
     # Step 6: Preprocessing Options
     st.write("### Preprocessing Options")
-    
+
     # Standardization
     standardize = st.checkbox("Standardize Numeric Features")
     if standardize:
         scaler = StandardScaler()
-        df[selected_features] = scaler.fit_transform(df[selected_features])
+        numeric_cols = df[selected_features].select_dtypes(include=['int64', 'float64']).columns
+        df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
         st.write("### Updated Dataset after Standardization")
         st.dataframe(df.head())
 
@@ -105,41 +106,9 @@ if uploaded_file is not None:
     encode_categorical = st.checkbox("Encode Categorical Features")
     if encode_categorical:
         le = LabelEncoder()
-        for col in df.select_dtypes(include=['object']).columns:
+        for col in df[selected_features].select_dtypes(include=['object']).columns:
             df[col] = le.fit_transform(df[col])
         st.write("### Updated Dataset after Encoding Categorical Features")
-        st.dataframe(df.head())
-
-    # Show missing value information before handling
-    missing_values = df.isnull().sum()
-    missing_columns = missing_values[missing_values > 0]
-    if len(missing_columns) > 0:
-        st.write("### Columns with Missing Values")
-        st.write(missing_columns)
-
-    # Fill missing values
-    fill_missing_values = st.checkbox("Fill Missing Values")
-    if fill_missing_values and len(missing_columns) > 0:
-        fill_method = st.selectbox("Select fill method", ["Mean", "Median", "Custom Value"])
-        if fill_method == "Mean":
-            df.fillna(df.mean(), inplace=True)
-        elif fill_method == "Median":
-            df.fillna(df.median(), inplace=True)
-        else:
-            custom_value = st.number_input("Enter custom value")
-            df.fillna(custom_value, inplace=True)
-        st.write("### Updated Dataset after Filling Missing Values")
-        st.dataframe(df.head())
-    
-    # Drop highly correlated features
-    drop_corr_features = st.checkbox("Drop Highly Correlated Features")
-    if drop_corr_features:
-        corr_matrix = df.corr().abs()
-        upper_triangle = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-        to_drop = [column for column in upper_triangle.columns if any(upper_triangle[column] > 0.95)]
-        df.drop(to_drop, axis=1, inplace=True)
-        st.write(f"Dropped highly correlated features: {to_drop}")
-        st.write("### Updated Dataset after Dropping Highly Correlated Features")
         st.dataframe(df.head())
 
     # Step 7: Visualization Options
@@ -186,6 +155,14 @@ if uploaded_file is not None:
         # Automatically drop the target column from the features
         X = df[selected_features]
         y = df[target_col]
+
+        # Handle categorical features in X
+        categorical_cols = X.select_dtypes(include=['object']).columns
+        if len(categorical_cols) > 0:
+            st.warning(f"Encoding categorical features: {categorical_cols}")
+            le = LabelEncoder()
+            for col in categorical_cols:
+                X[col] = le.fit_transform(X[col])
 
         proceed = st.button(f"Proceed with {model_choice}")
 
