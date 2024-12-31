@@ -11,7 +11,7 @@ import io
 st.set_page_config(page_title="Advanced EDA App", layout="wide")
 
 # Title and description
-st.title("🎬 Advanced EDA App for Movie Data 🎬")
+st.title(" Advanced EDA App")
 st.markdown("Upload your dataset to explore and analyze it with advanced visualization options.")
 
 def hide_streamlit_style():
